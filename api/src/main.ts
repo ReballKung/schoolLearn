@@ -11,7 +11,7 @@ async function bootstrap() {
     AppModule,
     new FastifyAdapter({
       logger: false,
-      trustProxy: false,
+      trustProxy: true,
     }),
   );
 
@@ -48,7 +48,7 @@ async function bootstrap() {
       .build();
 
     const document = SwaggerModule.createDocument(app, swaggerConfig);
-    SwaggerModule.setup('/api/docs', app, document);
+    SwaggerModule.setup('api/docs', app, document);
   }
   const port = Number(process.env.APP_PORT ?? 3001);
   await app.listen(port, '0.0.0.0');
