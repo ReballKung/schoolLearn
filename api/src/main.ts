@@ -1,3 +1,4 @@
+import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
 import { FastifyAdapter, NestFastifyApplication } from '@nestjs/platform-fastify';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
@@ -5,6 +6,7 @@ import fastifyCompress from '@fastify/compress';
 import fastifyCookie from '@fastify/cookie';
 import fastifyMultipart from '@fastify/multipart';
 import { AppModule } from './app.module';
+import { NodeEnv } from './config/env.validation';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestFastifyApplication>(
@@ -15,9 +17,11 @@ async function bootstrap() {
     }),
   );
 
+  const configService = app.get(ConfigService);
   app.setGlobalPrefix('api');
 
-  const corsOrigins = (process.env.CORS_ORIGINS ?? 'http://localhost:3000')
+  const corsOrigins = configService
+    .getOrThrow<string>('CORS_ORIGINS')
     .split(',')
     .map((origin) => origin.trim())
     .filter(Boolean);
@@ -39,7 +43,8 @@ async function bootstrap() {
     },
   });
 
-  if (process.env.NODE_ENV !== 'production') {
+  const nodeEnv = configService.getOrThrow<NodeEnv>('NODE_ENV');
+  if (nodeEnv !== NodeEnv.Production) {
     const swaggerConfig = new DocumentBuilder()
       .setTitle('schoolLearn LMS API')
       .setDescription('API documentation for schoolLearn LMS')
@@ -50,7 +55,7 @@ async function bootstrap() {
     const document = SwaggerModule.createDocument(app, swaggerConfig);
     SwaggerModule.setup('api/docs', app, document);
   }
-  const port = Number(process.env.APP_PORT ?? 3001);
+  const port = configService.getOrThrow<number>('APP_PORT');
   await app.listen(port, '0.0.0.0');
 }
 
