@@ -1,0 +1,66 @@
+services:
+  postgres:
+    image: postgres:17-alpine
+    container_name: schoollearn-postgres
+    restart: unless-stopped
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: schoollearn
+      POSTGRES_PASSWORD: schoollearn_password
+      POSTGRES_DB: schoollearn_db
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - schoollearn-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U schoollearn -d schoollearn_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: schoollearn-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    command: redis-server --appendonly yes --requirepass schoollearn_redis_pass
+    volumes:
+      - redis_data:/data
+    networks:
+      - schoollearn-net
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "schoollearn_redis_pass", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  rabbitmq:
+    image: rabbitmq:4-management-alpine
+    container_name: schoollearn-rabbitmq
+    restart: unless-stopped
+    ports:
+      - "5673:5672"
+      - "15673:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: schoollearn
+      RABBITMQ_DEFAULT_PASS: schoollearn_rabbit_pass
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    networks:
+      - schoollearn-net
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres_data:
+  redis_data:
+  rabbitmq_data:
+
+networks:
+  schoollearn-net:
+    driver: bridge
